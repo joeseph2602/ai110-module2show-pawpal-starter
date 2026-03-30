@@ -225,3 +225,145 @@ class TestSchedulerConflictDetection:
 
         # Should not detect any conflicts
         assert len(conflicts) == 0
+
+
+class TestSchedulerSorting:
+    """Test cases for Scheduler sorting functionality."""
+
+    def test_sort_tasks_by_time_chronological_order(self):
+        """Test that tasks are sorted correctly by time in chronological order."""
+        # Create owner and pet
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet = Pet(id=1, name="TestPet", species="Dog", age=3, weight=25.0)
+        owner.add_pet(pet)
+
+        # Create tasks at different times (not in chronological order)
+        task1 = Task(id=1, description="Evening Walk", time="6:00 PM", frequency="Daily")
+        task2 = Task(id=2, description="Morning Feed", time="8:00 AM", frequency="Daily")
+        task3 = Task(id=3, description="Afternoon Play", time="2:00 PM", frequency="Daily")
+        task4 = Task(id=4, description="Midnight Check", time="12:00 AM", frequency="Daily")
+
+        pet.add_task(task1)
+        pet.add_task(task2)
+        pet.add_task(task3)
+        pet.add_task(task4)
+
+        # Create scheduler and sort tasks
+        scheduler = Scheduler(owner)
+        sorted_tasks = scheduler.sort_by_time()
+
+        # Verify tasks are in chronological order
+        assert len(sorted_tasks) == 4
+        assert sorted_tasks[0].time == "12:00 AM"  # Midnight first
+        assert sorted_tasks[1].time == "8:00 AM"   # Morning second
+        assert sorted_tasks[2].time == "2:00 PM"   # Afternoon third
+        assert sorted_tasks[3].time == "6:00 PM"   # Evening last
+
+        # Verify task descriptions match the expected order
+        assert sorted_tasks[0].description == "Midnight Check"
+        assert sorted_tasks[1].description == "Morning Feed"
+        assert sorted_tasks[2].description == "Afternoon Play"
+        assert sorted_tasks[3].description == "Evening Walk"
+
+
+class TestSchedulerFiltering:
+    """Test cases for Scheduler filtering functionality."""
+
+    def test_filter_tasks_by_status(self):
+        """Test filtering tasks by completion status."""
+        # Create owner and pet
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet = Pet(id=1, name="TestPet", species="Dog", age=3, weight=25.0)
+        owner.add_pet(pet)
+
+        # Create tasks with different statuses
+        task1 = Task(id=1, description="Pending Task", time="8:00 AM", frequency="Daily", status=TaskStatus.PENDING)
+        task2 = Task(id=2, description="Completed Task", time="9:00 AM", frequency="Daily", status=TaskStatus.COMPLETED)
+        task3 = Task(id=3, description="Another Pending", time="10:00 AM", frequency="Daily", status=TaskStatus.PENDING)
+
+        pet.add_task(task1)
+        pet.add_task(task2)
+        pet.add_task(task3)
+
+        # Create scheduler and test filtering
+        scheduler = Scheduler(owner)
+
+        # Filter pending tasks
+        pending_tasks = scheduler.filter_tasks(status=TaskStatus.PENDING)
+        assert len(pending_tasks) == 2
+        assert all(task.status == TaskStatus.PENDING for task in pending_tasks)
+        assert "Pending Task" in [t.description for t in pending_tasks]
+        assert "Another Pending" in [t.description for t in pending_tasks]
+
+        # Filter completed tasks
+        completed_tasks = scheduler.filter_tasks(status=TaskStatus.COMPLETED)
+        assert len(completed_tasks) == 1
+        assert completed_tasks[0].description == "Completed Task"
+        assert completed_tasks[0].status == TaskStatus.COMPLETED
+
+    def test_filter_tasks_by_pet_name(self):
+        """Test filtering tasks by pet name (case-insensitive)."""
+        # Create owner with multiple pets
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet1 = Pet(id=1, name="Buddy", species="Dog", age=3, weight=25.0)
+        pet2 = Pet(id=2, name="Milo", species="Cat", age=2, weight=10.0)
+        owner.add_pet(pet1)
+        owner.add_pet(pet2)
+
+        # Add tasks to each pet
+        task1 = Task(id=1, description="Walk Buddy", time="8:00 AM", frequency="Daily")
+        task2 = Task(id=2, description="Feed Milo", time="9:00 AM", frequency="Daily")
+        task3 = Task(id=3, description="Play with Buddy", time="2:00 PM", frequency="Daily")
+
+        pet1.add_task(task1)
+        pet2.add_task(task2)
+        pet1.add_task(task3)
+
+        # Create scheduler and test filtering by pet name
+        scheduler = Scheduler(owner)
+
+        # Filter tasks for Buddy (case-insensitive)
+        buddy_tasks = scheduler.filter_tasks(pet_name="buddy")
+        assert len(buddy_tasks) == 2
+        assert all("Buddy" in task.description for task in buddy_tasks)
+
+        # Filter tasks for Milo
+        milo_tasks = scheduler.filter_tasks(pet_name="MILO")
+        assert len(milo_tasks) == 1
+        assert milo_tasks[0].description == "Feed Milo"
+
+        # Filter by non-existent pet
+        nonexistent_tasks = scheduler.filter_tasks(pet_name="Fluffy")
+        assert len(nonexistent_tasks) == 0
+
+
+class TestTaskRecurrence:
+    """Test cases for task recurrence logic."""
+
+    def test_marking_task_complete_does_not_create_new_task(self):
+        """Test that marking a task complete does not automatically create a new task.
+
+        Note: Current implementation does not include automatic recurrence.
+        This test documents the current behavior and can be updated when
+        recurrence logic is implemented.
+        """
+        # Create a pet and task
+        pet = Pet(id=1, name="TestPet", species="Dog", age=3, weight=25.0)
+        task = Task(id=1, description="Daily Walk", time="8:00 AM", frequency="Daily")
+
+        pet.add_task(task)
+
+        # Verify initial state
+        assert len(pet.tasks) == 1
+        assert pet.tasks[0].status == TaskStatus.PENDING
+
+        # Mark task as complete
+        task.mark_complete()
+
+        # Verify task is completed but no new task is created
+        assert len(pet.tasks) == 1  # Still only one task
+        assert pet.tasks[0].status == TaskStatus.COMPLETED
+        assert pet.tasks[0].completed_at is not None
+
+        # This test documents current behavior - no automatic recurrence
+        # When recurrence is implemented, this test should be updated to expect a new task

@@ -42,12 +42,19 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
-## Smarter Scheduling
+## Testing PawPal+
 
-The PawPal+ system now includes advanced scheduling features:
+Run the test suite to verify system functionality:
 
-- **Time-based sorting**: Tasks are automatically sorted chronologically by time for better daily planning
-- **Flexible filtering**: Filter tasks by completion status (pending/completed) and by specific pet names
-- **Conflict detection**: Automatically identifies scheduling conflicts when multiple tasks are scheduled at the same time, distinguishing between same-pet conflicts (more serious) and cross-pet scheduling (may still be impractical for solo owners)
-- **Comprehensive validation**: All pet and task data is validated with meaningful error messages
-- **Relationship tracking**: Proper relationships between owners, pets, and tasks enable complex scheduling logic
+```bash
+python -m pytest tests/
+```
+
+The test suite covers:
+- **Pet Management**: Creation, validation, and task relationships
+- **Task Lifecycle**: Creation, completion, and status tracking
+- **Scheduler Features**: Sorting by time, filtering by status/pet, and conflict detection
+- **Data Validation**: Ensuring proper constraints on pet and task attributes
+- **Edge Cases**: Empty states, invalid inputs, and boundary conditions
+
+**Confidence Level**: ⭐⭐⭐⭐⭐ (5/5 stars) - All 13 tests pass with comprehensive coverage of core behaviors, validation logic, and scheduling features.
