@@ -7,12 +7,13 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+-- The initial UML design included two classes: Pet and Task. The pet class stores information like name, species, age, weight, and health, and incldes methods to update and view details. The task class represents pet related tasks. 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
----
+-- Created a relationship between the class pet and the class task.
 
 ## 2. Scheduling Logic and Tradeoffs
 
@@ -21,12 +22,15 @@
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+The scheduler considers **time constraints** (detecting when tasks are scheduled at the same time) and **pet relationships** (distinguishing same-pet vs cross-pet conflicts).
+
+Time conflicts mattered most because you physically cannot do two tasks simultaneously, especially for pet care activities.
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
----
+-- The scheduler only checks for exact time matches (e.g., two tasks both scheduled at "8:00 AM") rather than detecting overlapping time durations (e.g., one task from 8:00-8:30 AM overlapping with another from 8:15-8:45 AM). This tradeoff is reasonable because the current system uses simple time strings without duration information, making exact matching more reliable and easier to implement. For a pet care scheduling system focused on daily routines, exact time conflicts are the most common and critical issues to detect.
 
 ## 3. AI Collaboration
 

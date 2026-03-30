@@ -27,10 +27,18 @@ class Task:
     time: str
     frequency: str
     status: TaskStatus = TaskStatus.PENDING
+    completed_at: Optional[datetime] = None
 
-    def mark_complete(self) -> None:
+    def __post_init__(self):
+        """Validate task attributes after initialization."""
+        if len(self.description.strip()) == 0:
+            raise ValueError("Task description cannot be empty")
+
+    def mark_complete(self) -> str:
         """Mark the task as completed."""
         self.status = TaskStatus.COMPLETED
+        self.completed_at = datetime.now()
+        return f"Task '{self.description}' marked as completed"
 
     def get_details(self) -> dict:
         """Return task details."""
@@ -39,7 +47,8 @@ class Task:
             "description": self.description,
             "time": self.time,
             "frequency": self.frequency,
-            "status": self.status.value
+            "status": self.status.value,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None
         }
 
 
@@ -53,6 +62,15 @@ class Pet:
     weight: float
     health: HealthStatus = HealthStatus.GOOD
     tasks: List[Task] = field(default_factory=list)
+
+    def __post_init__(self):
+        """Validate pet attributes after initialization."""
+        if self.age < 0:
+            raise ValueError("Age cannot be negative")
+        if self.weight <= 0:
+            raise ValueError("Weight must be positive")
+        if len(self.name.strip()) == 0:
+            raise ValueError("Pet name cannot be empty")
 
     def add_task(self, task: Task) -> None:
         """Add a task to the pet."""
@@ -123,3 +141,91 @@ class Scheduler:
                 task.mark_complete()
                 return True
         return False
+
+    def sort_by_time(self) -> List[Task]:
+        """Sort all tasks by their time attribute in ascending order."""
+        from datetime import datetime
+        
+        def time_to_minutes(time_str: str) -> int:
+            """Convert time string like '8:00 AM' to minutes since midnight."""
+            try:
+                # Parse the time string
+                time_obj = datetime.strptime(time_str, "%I:%M %p")
+                return time_obj.hour * 60 + time_obj.minute
+            except ValueError:
+                # Fallback: if parsing fails, return a high value to sort to end
+                return 9999
+        
+        return sorted(self.get_all_tasks(), key=lambda task: time_to_minutes(task.time))
+
+    def filter_tasks(self, status: Optional[TaskStatus] = None, pet_name: Optional[str] = None) -> List[Task]:
+        """
+        Filter tasks by completion status and/or pet name.
+        
+        Args:
+            status: Filter by task status (PENDING, COMPLETED, etc.)
+            pet_name: Filter by pet name (case-insensitive)
+            
+        Returns:
+            List of tasks matching the filter criteria
+        """
+        tasks = self.get_all_tasks()
+        
+        if status is not None:
+            tasks = [task for task in tasks if task.status == status]
+            
+        if pet_name is not None:
+            # Find tasks belonging to pets with the specified name
+            filtered_tasks = []
+            for task in tasks:
+                for pet in self.owner.pets:
+                    if task in pet.tasks and pet.name.lower() == pet_name.lower():
+                        filtered_tasks.append(task)
+                        break
+            tasks = filtered_tasks
+            
+        return tasks
+
+    def detect_conflicts(self) -> List[str]:
+        """
+        Detect scheduling conflicts where tasks are scheduled at the same time.
+
+        Returns:
+            List of warning messages for any conflicts found
+        """
+        from collections import defaultdict
+
+        warnings = []
+        tasks = self.get_all_tasks()
+
+        # Group tasks by time using defaultdict
+        time_groups = defaultdict(list)
+        for task in tasks:
+            time_groups[task.time].append(task)
+
+        # Check for conflicts at each time slot
+        for time_slot, conflicting_tasks in time_groups.items():
+            if len(conflicting_tasks) > 1:
+                # Group tasks by pet using dictionary comprehension
+                pet_conflicts = defaultdict(list)
+                for task in conflicting_tasks:
+                    for pet in self.owner.pets:
+                        if task in pet.tasks:
+                            pet_conflicts[pet.name].append(task)
+                            break
+
+                # Find pets with multiple tasks at this time
+                same_pet_conflicts = [
+                    f"{pet_name}: {', '.join(t.description for t in pet_tasks)}"
+                    for pet_name, pet_tasks in pet_conflicts.items()
+                    if len(pet_tasks) > 1
+                ]
+
+                if same_pet_conflicts:
+                    warnings.append(f"⚠️  Time conflict at {time_slot}: {'; '.join(same_pet_conflicts)}")
+                else:
+                    # Different pets at same time
+                    all_task_descriptions = [t.description for t in conflicting_tasks]
+                    warnings.append(f"ℹ️  Multiple pets scheduled at {time_slot}: {', '.join(all_task_descriptions)}")
+
+        return warnings

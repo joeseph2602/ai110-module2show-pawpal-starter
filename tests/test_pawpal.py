@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from pawpal_system import Pet, Task, Owner, HealthStatus, TaskStatus
+from pawpal_system import Pet, Task, Owner, Scheduler, HealthStatus, TaskStatus
 
 
 class TestPet:
@@ -26,14 +26,14 @@ class TestPet:
         assert pet.weight == 25.5
         assert pet.health == HealthStatus.GOOD
 
-        # Test viewdetails method
-        details = pet.viewdetails()
+        # Test view_details method
+        details = pet.view_details()
         assert details["name"] == "Buddy"
         assert details["species"] == "Dog"
         assert details["age"] == 3
         assert details["weight"] == 25.5
         assert details["health"] == "Good"
-        assert details["tasks_count"] == 0
+        assert details["task_count"] == 0
 
     def test_pet_validation(self):
         """Test that pet validation works correctly."""
@@ -59,19 +59,21 @@ class TestTask:
         task = Task(
             id=1,
             description="Take Buddy for a walk",
-            pet_id=1,
+            time="8:00 AM",
+            frequency="Daily",
             status=TaskStatus.PENDING
         )
 
         # Verify task attributes
         assert task.id == 1
         assert task.description == "Take Buddy for a walk"
-        assert task.pet_id == 1
+        assert task.time == "8:00 AM"
+        assert task.frequency == "Daily"
         assert task.status == TaskStatus.PENDING
         assert task.completed_at is None
 
         # Complete the task
-        result = task.complete_task()
+        result = task.mark_complete()
         assert "completed" in result
         assert task.status == TaskStatus.COMPLETED
         assert task.completed_at is not None
@@ -84,7 +86,7 @@ class TestTask:
         """Test that task validation works correctly."""
         # Test empty description raises error
         with pytest.raises(ValueError, match="Task description cannot be empty"):
-            Task(id=1, description="")
+            Task(id=1, description="", time="8:00 AM", frequency="Daily")
 
 
 class TestPetTaskRelationship:
@@ -104,14 +106,15 @@ class TestPetTaskRelationship:
 
         # Initially no tasks
         assert len(pet.tasks) == 0
-        details = pet.viewdetails()
-        assert details["tasks_count"] == 0
+        details = pet.view_details()
+        assert details["task_count"] == 0
 
         # Create and add a task
         task = Task(
             id=1,
             description="Feed Max breakfast",
-            pet_id=None  # Will be set by add_task
+            time="8:00 AM",
+            frequency="Daily"
         )
 
         pet.add_task(task)
@@ -119,11 +122,11 @@ class TestPetTaskRelationship:
         # Verify task was added and count increased
         assert len(pet.tasks) == 1
         assert pet.tasks[0].description == "Feed Max breakfast"
-        assert pet.tasks[0].pet_id == 1  # Should be set to pet's id
+        assert pet.tasks[0].time == "8:00 AM"
 
-        # Verify through viewdetails
-        details = pet.viewdetails()
-        assert details["tasks_count"] == 1
+        # Verify through view_details
+        details = pet.view_details()
+        assert details["task_count"] == 1
 
     def test_complete_task_changes_status(self):
         """Test that completing a task actually changes its status."""
@@ -131,6 +134,8 @@ class TestPetTaskRelationship:
         task = Task(
             id=1,
             description="Walk the dog",
+            time="8:00 AM",
+            frequency="Daily",
             status=TaskStatus.PENDING
         )
 
@@ -139,7 +144,7 @@ class TestPetTaskRelationship:
         assert task.completed_at is None
 
         # Complete the task
-        result = task.complete_task()
+        result = task.mark_complete()
 
         # Verify status changed and timestamp was set
         assert task.status == TaskStatus.COMPLETED
@@ -150,3 +155,73 @@ class TestPetTaskRelationship:
         task_details = task.get_details()
         assert task_details["status"] == "Completed"
         assert task_details["completed_at"] is not None
+
+
+class TestSchedulerConflictDetection:
+    """Test cases for Scheduler conflict detection."""
+
+    def test_detect_same_pet_conflicts(self):
+        """Test detection of conflicts where the same pet has multiple tasks at the same time."""
+        # Create owner and pets
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet = Pet(id=1, name="TestPet", species="Dog", age=3, weight=25.0)
+        owner.add_pet(pet)
+
+        # Create conflicting tasks for the same pet
+        task1 = Task(id=1, description="Morning Walk", time="8:00 AM", frequency="Daily")
+        task2 = Task(id=2, description="Morning Grooming", time="8:00 AM", frequency="Weekly")
+        pet.add_task(task1)
+        pet.add_task(task2)
+
+        # Create scheduler and check for conflicts
+        scheduler = Scheduler(owner)
+        conflicts = scheduler.detect_conflicts()
+
+        # Should detect the conflict
+        assert len(conflicts) == 1
+        assert "Time conflict at 8:00 AM" in conflicts[0]
+        assert "TestPet: Morning Walk, Morning Grooming" in conflicts[0]
+
+    def test_detect_different_pet_conflicts(self):
+        """Test detection of conflicts where different pets have tasks at the same time."""
+        # Create owner and pets
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet1 = Pet(id=1, name="Buddy", species="Dog", age=3, weight=25.0)
+        pet2 = Pet(id=2, name="Milo", species="Cat", age=2, weight=10.0)
+        owner.add_pet(pet1)
+        owner.add_pet(pet2)
+
+        # Create tasks at the same time for different pets
+        task1 = Task(id=1, description="Training", time="2:00 PM", frequency="Daily")
+        task2 = Task(id=2, description="Nap", time="2:00 PM", frequency="Daily")
+        pet1.add_task(task1)
+        pet2.add_task(task2)
+
+        # Create scheduler and check for conflicts
+        scheduler = Scheduler(owner)
+        conflicts = scheduler.detect_conflicts()
+
+        # Should detect the conflict
+        assert len(conflicts) == 1
+        assert "Multiple pets scheduled at 2:00 PM" in conflicts[0]
+        assert "Training, Nap" in conflicts[0]
+
+    def test_no_conflicts_when_tasks_are_at_different_times(self):
+        """Test that no conflicts are detected when all tasks are at different times."""
+        # Create owner and pet
+        owner = Owner(id=1, name="Test Owner", email="test@example.com")
+        pet = Pet(id=1, name="TestPet", species="Dog", age=3, weight=25.0)
+        owner.add_pet(pet)
+
+        # Create tasks at different times
+        task1 = Task(id=1, description="Morning Walk", time="8:00 AM", frequency="Daily")
+        task2 = Task(id=2, description="Afternoon Play", time="2:00 PM", frequency="Daily")
+        pet.add_task(task1)
+        pet.add_task(task2)
+
+        # Create scheduler and check for conflicts
+        scheduler = Scheduler(owner)
+        conflicts = scheduler.detect_conflicts()
+
+        # Should not detect any conflicts
+        assert len(conflicts) == 0
