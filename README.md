@@ -58,3 +58,43 @@ The test suite covers:
 - **Edge Cases**: Empty states, invalid inputs, and boundary conditions
 
 **Confidence Level**: ⭐⭐⭐⭐⭐ (5/5 stars) - All 13 tests pass with comprehensive coverage of core behaviors, validation logic, and scheduling features.
+
+## Screenshots
+
+To embed screenshots in your documentation, use this Markdown syntax:
+
+```html
+<a href="/course_images/ai110/your_screenshot_name.png" target="_blank">
+  <img src='/course_images/ai110/your_screenshot_name.png' 
+       title='PawPal App' 
+       width='' 
+       alt='PawPal App' 
+       class='center-block' />
+</a>
+```
+
+*Replace `your_screenshot_name.png` with your actual screenshot filename.*
+
+## Screenshots
+
+To embed screenshots in your documentation, use this Markdown syntax:
+
+```html
+<a href="/course_images/ai110/your_screenshot_name.png" target="_blank">
+  <img src='/course_images/ai110/your_screenshot_name.png' 
+       title='PawPal App' 
+       width='' 
+       alt='PawPal App' 
+       class='center-block' />
+</a>
+```
+
+*Replace `your_screenshot_name.png` with your actual screenshot filename.*
+--Task Lifecycle: Creation, completion, and status tracking
+-- Scheduler Features: Sorting by time, filtering by status/pet, and conflict detection
+-- Data Validation: Ensuring proper constraints on pet and task attributes
+-- Edge Cases: Empty states, invalid inputs, and boundary conditions
+
+Confidence Level: (5/5 stars) - All 13 tests pass with comprehensive coverage of core behaviors, validation logic, and scheduling features.
+
+## DEMO

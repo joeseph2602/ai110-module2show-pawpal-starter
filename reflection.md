@@ -22,9 +22,9 @@
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
-The scheduler considers **time constraints** (detecting when tasks are scheduled at the same time) and **pet relationships** (distinguishing same-pet vs cross-pet conflicts).
+-- The scheduler considers time constraints (detecting when tasks are scheduled at the same time) and pet relationships (distinguishing same-pet vs cross-pet conflicts).
 
-Time conflicts mattered most because you physically cannot do two tasks simultaneously, especially for pet care activities.
+-- Time conflicts mattered most because you physically cannot do two tasks simultaneously, especially for pet care activities.
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
@@ -39,12 +39,15 @@ Time conflicts mattered most because you physically cannot do two tasks simultan
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
 - What kinds of prompts or questions were most helpful?
 
+-- I used AI to help design, brainstorm, and complete the steps given to me. If i was confused with what    I needed to do I would have AI help me get through the problem.
+-- The most helpful prompts were those asking for help when I was stuck. 
+
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
 
----
+-- I asked copilot to review the code and check if it could be more simple but it made it too pythonic so I rejected the change. 
 
 ## 4. Testing and Verification
 
@@ -53,12 +56,14 @@ Time conflicts mattered most because you physically cannot do two tasks simultan
 - What behaviors did you test?
 - Why were these tests important?
 
+I tested pet creation/validation, task creation/completion, pet-task relationships, scheduler conflict detection, and sorting/filtering. These tests were important to ensure the system works reliably and prevents invalid data or scheduling conflicts.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
 
----
+I am very confident (5/5 stars) because all 13 tests pass. If I had more time, I would test time parsing edge cases, recurrence logic, and performance with large datasets.
 
 ## 5. Reflection
 
